@@ -1,3 +1,4 @@
+"use strict";
 /*
 This file host some basic initial loading code for Newspaper Annotation Tool (NAT).
 Export related operations done during import of images (extracting date, volume, page, etc. information

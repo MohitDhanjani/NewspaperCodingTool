@@ -6992,7 +6992,9 @@ function annotation_editor_on_metadata_update(p) {
   var img_index_list = [ _via_image_index ];
 
 
+
   var region_id = pid.row_id;
+
   if ( _via_display_area_content_name === VIA_DISPLAY_AREA_CONTENT_NAME.IMAGE_GRID ) {
     img_index_list = _via_image_grid_selected_img_index_list.slice(0);
     region_id = -1; // this flag denotes that we want to update all regions
@@ -7721,6 +7723,7 @@ function nat_update_file_attribute(imgIndex, attrToUpdate, newValue) {
     show_message('Failed to update file attributes! ' + err);
   });
 }
+
 
 function project_file_add_abs_path_with_input() {
   var config = {'title':'Add File using Absolute Path' };

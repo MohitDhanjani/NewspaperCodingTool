@@ -280,6 +280,11 @@ _via_settings.core.buffer_size      = 4*VIA_IMG_PRELOAD_COUNT + 2;
 _via_settings.core.filepath         = {};
 _via_settings.core.default_filepath = '';
 
+//NAT related settings.
+_via_settings.nat = {}
+_via_settings.nat.lambda_url = '';
+_via_settings.nat.lambda_api_key = '';
+
 // UI html elements
 var invisible_file_input = document.getElementById("invisible_file_input");
 var display_area    = document.getElementById("display_area");
@@ -1310,7 +1315,24 @@ function pack_via_metadata(return_type) {
 
             var rattr = r[i].region_attributes;
             for (const key in rattr) {
-                csvline.push('"' + escape_for_csv(rattr[key]) + '"');
+
+              if(typeof rattr[key] === "object") {
+                var tempAr = [];
+                for (const valKey in rattr[key]) {
+                  if(typeof rattr[key][valKey] === "boolean" && rattr[key][valKey] == true) {
+                    tempAr.push(valKey);
+                  }
+                }
+                csvline.push('"' + escape_for_csv(tempAr.join(', ')) + '"');
+              } else {
+                if(rattr[key] == '') {
+                  csvline.push('"' + escape_for_csv('NA') + '"');
+                } else {
+                  csvline.push('"' + escape_for_csv(rattr[key]) + '"');
+                }
+              }
+
+
             }
 
             csvline.push(sattr.name);

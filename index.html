@@ -611,23 +611,24 @@
 
           <div class="row">
             <div class="variable">
-              <div class="name">AWS ID</div>
-              <div class="desc">Images are preloaded in buffer to allow smoother navigation of next/prev images. A large buffer size may slow down the overall browser performance. To disable preloading, set buffer size to 0.</div>
+              <div class="name">AWS Lambda Function URL</div>
+              <div class="desc">HTTPS URL of the function URL that will receive the base64 encoded image and return AWS Textract response.</div>
             </div>
             <div class="value">
-              <input type="text" id="_via_settings.nat.awsID" />
+              <input type="text" id="_via_settings.nat.lambda_url" />
             </div>
           </div>
 
-          <div class="row">
-            <div class="variable">
-              <div class="name">Access Token</div>
-              <div class="desc">Images are preloaded in buffer to allow smoother navigation of next/prev images. A large buffer size may slow down the overall browser performance. To disable preloading, set buffer size to 0.</div>
+            <div class="row">
+                <div class="variable">
+                    <div class="name">AWS Lambda Function API Key</div>
+                    <div class="desc">API Key that will sent in the X-NAT-APIKEY header.</div>
+                </div>
+                <div class="value">
+                    <input type="text" id="_via_settings.nat.lambda_api_key" />
+                </div>
             </div>
-            <div class="value">
-              <input type="text" id="_via_settings.nat.awsToken" />
-            </div>
-          </div>
+
 
           <div class="row" style="border:none;">
             <button onclick="settings_save()" value="save_settings" style="margin-top:2rem">Save</button>

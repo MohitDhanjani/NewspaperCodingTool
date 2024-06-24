@@ -379,10 +379,10 @@ _via_import_export.prototype.export_to_nct_csv = function() {
 
       //line.push(this.d.store.metadata[mid].flg);
       console.log(this.d.store.metadata[mid].av);
-      for (let i = 0; i < Object.keys(this.d.store.attribute).length; i++) {
+      for (let i = 1; i < Object.keys(this.d.store.attribute).length; i++) {
         var strKey = String(i);
         if(strKey in this.d.store.metadata[mid].av){
-          line.push(_via_util_escape_quote_for_csv(this.d.store.metadata[mid].av[strKey]));
+          line.push('"' + _via_util_escape_quote_for_csv(this.d.store.metadata[mid].av[strKey]) + '"');
         } else {
           line.push('NA');
         }

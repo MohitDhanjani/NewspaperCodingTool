@@ -7,6 +7,7 @@
  *
  */
 
+
 function _via_control_panel(control_panel_container, via) {
   this._ID = '_via_control_panel_';
   this.c   = control_panel_container;
@@ -210,7 +211,9 @@ _via_control_panel.prototype._add_project_tools = function() {
 
   var save = _via_util_get_svg_button('micon_save', 'Save current VIA Project');
   save.addEventListener('click', function() {
-    this.via.d.project_save();
+    //this.via.d.project_save();
+    //console.log(this.via);
+    //NCT related code.
   }.bind(this));
   this.c.appendChild(save);
 

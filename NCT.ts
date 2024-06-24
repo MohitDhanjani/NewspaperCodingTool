@@ -15,6 +15,7 @@ Also adds Date, Page, Volume, Issue and Publication file attributes.
 */
 function _via_load_submodules() {
 
+
     _via_util_msg_show('Newspaper Coding Tool loaded.');
 
     const NCTAttributes = [
@@ -36,12 +37,11 @@ function _via_load_submodules() {
             type = 'FILE1_Z0_XY1';
         }
 
-        this.d.store.attribute[i] = new _via_attribute(NCTAttributes[i].name,
-            type,
-            _VIA_ATTRIBUTE_TYPE.TEXT,
-            NCTAttributes[i].name,
-            {},
-            '');
+        this.d.attribute_add(NCTAttributes[i].name, type, _VIA_ATTRIBUTE_TYPE.TEXT, NCTAttributes[i].name, {}, 'NA').then(() =>{
+            console.log("Attributes added");
+        });
+
+
 
     }
 

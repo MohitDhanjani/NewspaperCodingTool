@@ -10,144 +10,128 @@ newsID.addEventListener('click', DoNewspaperAnalysis);
 var OCRStates = {};
 function DoNewspaperAnalysis() {
     const lamUrl = _via_settings.nat.lambda_url;
+    const currentImageID = _via_image_id;
     if (lamUrl == '') {
         show_message('AWS Lambda Function URL missing. Please add in project settings.');
     }
     else {
-        for (const key in _via_img_fileref) {
-            if (key in OCRStates) {
-                show_message('Using cached file.');
-                processTextractResponse(key);
-            }
-            else {
-                show_message('Connecting to AWS Textract.');
-                (0, axios_1.default)({
-                    method: "POST",
-                    url: lamUrl,
-                    data: _via_img_fileref[key]
-                }).then((response) => {
-                    const layoutsFromTextract = new amazon_textract_response_parser_1.TextractDocument(response.data);
-                    OCRStates[key] = layoutsFromTextract;
-                    processTextractResponse(key);
-                });
-            }
+        if (currentImageID in OCRStates) {
+            show_message('Using cached file.');
+            processTextractResponse(currentImageID);
+        }
+        else {
+            show_message('Connecting to AWS Textract.');
+            (0, axios_1.default)({
+                method: "POST",
+                url: lamUrl,
+                headers: {
+                    'x-nat-apikey': _via_settings.nat.lambda_api_key
+                },
+                data: _via_img_fileref[currentImageID]
+            }).then((response) => {
+                const layoutsFromTextract = new amazon_textract_response_parser_1.TextractDocument(response.data);
+                OCRStates[currentImageID] = layoutsFromTextract;
+                processTextractResponse(currentImageID);
+            });
         }
     }
-}
-function isPointInRectangle(px, py, rect) {
-    const { x, y, width, height } = rect;
-    return px >= x && px <= x + width && py >= y && py <= y + height;
-}
-function isPointInPolygon(px, py, polygon) {
-    const { all_points_x, all_points_y } = polygon;
-    const numPoints = all_points_x.length;
-    let isInside = false;
-    let j = numPoints - 1;
-    for (let i = 0; i < numPoints; j = i++) {
-        const xi = all_points_x[i], yi = all_points_y[i];
-        const xj = all_points_x[j], yj = all_points_y[j];
-        const intersect = ((yi > py) != (yj > py)) && (px < (xj - xi) * (py - yi) / (yj - yi) + xi);
-        if (intersect) {
-            isInside = !isInside;
-        }
-    }
-    return isInside;
 }
 function processTextractResponse(filename) {
     show_message('Processing Textract response.');
     const layoutsFromTextract = OCRStates[filename];
+    const pageHeight = _via_current_image_height;
+    const pageWidth = _via_current_image_width;
+    var regions = _via_img_metadata[_via_image_id].regions;
     for (const page of layoutsFromTextract.iterPages()) {
-        const pageHeight = _via_current_image_height;
-        const pageWidth = _via_current_image_width;
-        var regions = _via_img_metadata[_via_image_id].regions;
-        console.log(regions);
         if (regions.length !== 0) {
             for (var i = 0; i < regions.length; ++i) {
                 var sattr = regions[i].shape_attributes;
                 var rattr = regions[i].region_attributes;
                 var shapeDetails = structuredClone(sattr);
                 delete shapeDetails.name;
-                var bodyAr = [];
-                try {
-                    for (const layItem of page.iterLines()) {
-                        const boxX = Math.round(layItem.geometry.boundingBox.left * pageWidth);
-                        const boxY = Math.round(layItem.geometry.boundingBox.top * pageHeight);
-                        const boxH = Math.round(layItem.geometry.boundingBox.height * pageHeight);
-                        const boxW = Math.round(layItem.geometry.boundingBox.width * pageWidth);
-                        const boxBottomX = boxX + boxH;
-                        const boxBottomY = boxY + boxH;
-                        //How to entirely keep something in
-                        if (sattr.name == "rect") {
-                            if (isPointInRectangle(boxX, boxY, shapeDetails) && isPointInRectangle(boxBottomX, boxBottomY, shapeDetails)) {
-                                bodyAr.push(layItem);
-                            }
-                        }
-                        if (sattr.name == "polygon") {
-                            if (isPointInPolygon(boxX, boxY, shapeDetails) && isPointInPolygon(boxBottomX, boxBottomY, shapeDetails)) {
-                                bodyAr.push(layItem);
+                if (rattr.Type == "Headline" || rattr.Type == "Body" || rattr.Type == "Byline") {
+                    var bodyAr = [];
+                    try {
+                        for (const layLines of page.iterLines()) {
+                            for (const layItem of layLines.iterWords()) {
+                                const boxX = Math.round(layItem.geometry.boundingBox.left * pageWidth);
+                                const boxY = Math.round(layItem.geometry.boundingBox.top * pageHeight);
+                                const boxH = Math.round(layItem.geometry.boundingBox.height * pageHeight);
+                                const boxW = Math.round(layItem.geometry.boundingBox.width * pageWidth);
+                                const boxBottomX = boxX + boxW;
+                                const boxBottomY = boxY + boxH;
+                                if (nat_is_inside_this_region(boxX, boxY, i) && nat_is_inside_this_region(boxBottomX, boxBottomY, i)) {
+                                    layItem.computedX = boxX;
+                                    bodyAr.push(layItem);
+                                }
                             }
                         }
                     }
-                }
-                catch (err) {
-                    console.log(err);
-                }
-                console.log(bodyAr);
-                var sortedAr = bodyAr.sort((a, b) => {
-                    return a.geometry.boundingBox.top > b.geometry.boundingBox.top;
-                });
-                console.log(sortedAr);
-                var headlineAr = [];
-                var headline = '';
-                headlineAr.push(sortedAr[0].text);
-                var headlineRaw = sortedAr[0];
-                sortedAr.shift();
-                for (let j = 0; j < 5; j++) {
-                    if (areHeightsApproximatelyEqual(sortedAr[j].geometry.boundingBox.height, headlineRaw.geometry.boundingBox.height, 0.001)) {
-                        headlineAr.push(sortedAr[j].text);
-                        sortedAr.shift();
+                    catch (err) {
+                        console.log(err);
                     }
-                    else if (!areHeightsApproximatelyEqual(sortedAr[j].geometry.boundingBox.height, sortedAr[j + 1].geometry.boundingBox.height, 0.001)) {
-                        headlineAr.push(sortedAr[j].text);
-                        sortedAr.shift();
+                    var fullBodyTextAr = [];
+                    bodyAr.forEach(element => {
+                        fullBodyTextAr.push(element.text);
+                    });
+                    try {
+                        nat_update_region_attribute(_via_image_id, i, 'Text', fullBodyTextAr.join(' '));
+                    }
+                    catch (err) {
+                        show_message('Unable to add OCR information to region.');
+                        console.log(err);
                     }
                 }
-                headline = headlineAr.join(' ');
-                var para = [];
-                var fullBodyTextAr = [];
-                sortedAr.forEach(element => {
-                    if (!element.text.trim().endsWith('.')) {
-                        para.push(element.text);
+            }
+            for (var g = 0; g < regions.length; ++g) {
+                var ParentSattr = regions[g].shape_attributes;
+                var ParentRattr = regions[g].region_attributes;
+                var ParentShapeDetails = structuredClone(ParentSattr);
+                delete ParentShapeDetails.name;
+                if (ParentRattr.Type == "Article") {
+                    var childObjects = [];
+                    for (var j = 0; j < regions.length; ++j) {
+                        console.log(regions[j]);
+                        var ChildSattr = regions[j].shape_attributes;
+                        var ChildRattr = regions[j].region_attributes;
+                        var ChildShapeDetails = structuredClone(regions[j].shape_attributes);
+                        delete ChildShapeDetails.name;
+                        if (ChildRattr.Type == "Body" || ChildRattr.Type == "Headline" || ChildRattr.Type == "Byline") {
+                            if (nat_is_inside_this_region(ChildSattr.x, ChildSattr.y, g)) {
+                                childObjects.push(regions[j]);
+                            }
+                        }
+                        console.log('Below are child objects of article region ' + g);
+                        console.log(childObjects);
+                        let headlineObject = childObjects.find(item => item.region_attributes.Type === "Headline");
+                        let headlineText = headlineObject ? headlineObject.region_attributes.Text : 'NA';
+                        let bylineObject = childObjects.find(item => item.region_attributes.Type === "Byline");
+                        let bylineText = bylineObject ? bylineObject.region_attributes.Text : 'NA';
+                        let bodyObjects = childObjects.filter(item => item.region_attributes.Type === "Body");
+                        bodyObjects.sort((a, b) => a.shape_attributes.x - b.shape_attributes.x);
+                        let bodyTexts = bodyObjects.map(item => item.region_attributes.Text);
+                        var combinedText = [];
+                        combinedText[0] = 'HEADLINE: ' + headlineText;
+                        combinedText[1] = '';
+                        combinedText[2] = 'BYLINE: ' + bylineText;
+                        combinedText[3] = '';
+                        var stringText = [...combinedText, ...bodyTexts].join('\n');
+                        console.log(stringText);
+                        try {
+                            nat_update_region_attribute(_via_image_id, g, 'Text', stringText);
+                        }
+                        catch (err) {
+                            show_message('Unable to add OCR information to region.');
+                            console.log(err);
+                        }
                     }
-                    else {
-                        para.push(element.text);
-                        fullBodyTextAr.push(para.join(' '));
-                        para = [];
-                    }
-                });
-                var fullBodyText = fullBodyTextAr.join('\n');
-                var img_index = [_via_image_index];
-                try {
-                    nat_update_region_attribute(img_index, i, 'Headline', headline);
-                    nat_update_region_attribute(img_index, i, 'Body', fullBodyText);
-                }
-                catch (err) {
-                    show_message('Unable to add OCR information to region.');
-                    console.log(err);
                 }
             }
         }
     }
 }
-function nat_update_region_attribute(imgIndex, regionID, attrToUpdate, newValue) {
-    annotation_editor_update_region_metadata(imgIndex, regionID, attrToUpdate, newValue, undefined).then(function (update_count) {
-        annotation_editor_on_metadata_update_done('region', attrToUpdate, update_count);
-        annotation_editor_update_content();
-    }, function (err) {
-        console.log(err);
-        show_message('Failed to update region attributes! ' + err);
-    });
-}
-function areHeightsApproximatelyEqual(height1, height2, tolerance = 0.0001) {
-    return Math.abs(height1 - height2) <= tolerance;
+function nat_update_region_attribute(imgID, regionID, attrToUpdate, newValue) {
+    _via_img_metadata[imgID].regions[regionID].region_attributes[attrToUpdate] = newValue;
+    annotation_editor_on_metadata_update_done('region', attrToUpdate, 1);
+    annotation_editor_update_content();
 }

@@ -16,14 +16,17 @@ Also adds Date, Page, Volume, Issue and Publication file attributes.
 function _via_load_submodules() {
 
 
-    nat_add_new_attribute('Headline', VIA_ATTRIBUTE_TYPE.TEXT);
-    nat_add_new_attribute('Byline', VIA_ATTRIBUTE_TYPE.TEXT)
-    nat_add_new_attribute('Body', VIA_ATTRIBUTE_TYPE.TEXT);
+    // nat_add_new_attribute('Headline', VIA_ATTRIBUTE_TYPE.TEXT);
+    // nat_add_new_attribute('Byline', VIA_ATTRIBUTE_TYPE.TEXT)
+    // nat_add_new_attribute('Body', VIA_ATTRIBUTE_TYPE.TEXT);
+
 
     _via_attributes['region']['Type'] = {};
     _via_attributes['region']['Type'].type = 'dropdown';
-    _via_attributes['region']['Type'].options = {'News': 'News', 'Ad': 'Ad'};
-    _via_attributes['region']['Type'].default_options = 'News';
+    _via_attributes['region']['Type'].options = {'Article': 'Article', 'Headline': 'Headline', 'Byline':'Byline', 'Body':'Body', 'Lead':'Lead', 'Date': 'Date', 'Page No.' : 'Page', 'Volume' : 'Volume'};
+    _via_attributes['region']['Type'].default_options = 'Article';
+
+    nat_add_new_attribute('Text', VIA_ATTRIBUTE_TYPE.TEXT);
 
     _via_attributes['file']['Date'] = { 'type':'text' };
     _via_attributes['file']['Date'].default_value = '';

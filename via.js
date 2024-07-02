@@ -101,7 +101,7 @@ var VIA_REGION_SHAPES_POINTS_RADIUS = 3;
 var VIA_REGION_POINT_RADIUS         = 3;
 var VIA_REGION_POINT_RADIUS_DEFAULT = 3;
 
-var VIA_THEME_REGION_BOUNDARY_WIDTH = 3;
+var VIA_THEME_REGION_BOUNDARY_WIDTH = 1;
 var VIA_THEME_BOUNDARY_LINE_COLOR   = "black";
 var VIA_THEME_BOUNDARY_FILL_COLOR   = "yellow";
 var VIA_THEME_SEL_REGION_FILL_COLOR = "#808080";
@@ -284,6 +284,12 @@ _via_settings.core.default_filepath = '';
 _via_settings.nat = {}
 _via_settings.nat.lambda_url = '';
 _via_settings.nat.lambda_api_key = '';
+_via_settings.nat.colHOverlapThresh = 0.1;
+_via_settings.nat.colHMultilineUnionThresh = 0.1;
+_via_settings.nat.paraVDistTol = 0;
+_via_settings.nat.paraLineHeightTol = 0;
+_via_settings.nat.paraIndentThresh = 0;
+
 
 // UI html elements
 var invisible_file_input = document.getElementById("invisible_file_input");
@@ -1342,9 +1348,131 @@ function pack_via_metadata(return_type) {
             csvline.push('"' + escape_for_csv(map_to_json(shapeDetails)) + '"');
 
 
-            csvline.push(escape_for_csv(_via_img_metadata[image_id].filename));
+            csvline.push('"' + escape_for_csv(_via_img_metadata[image_id].filename) + '"');
             csvdata.push( csvline.join(VIA_CSV_SEP) );
             newsItemNo++;
+          }
+        } else {
+          // @todo: reconsider this practice of adding an empty entry
+          csvdata.push(prefix + ',0,0,"{}","{}"');
+        }
+      }
+      ok_callback(csvdata);
+    }
+
+    if(return_type === 'natV2') {
+      var csvdata = [];
+      var csvheader = '';
+
+      var csvHeaderArry = [];
+      csvHeaderArry.push('NewsItemNo');
+
+      csvHeaderArry.push('Headline');
+      csvHeaderArry.push('Byline');
+      csvHeaderArry.push('Article');
+
+      Object.keys(_via_attributes.region).forEach((element) => {
+
+        console.log(element);
+        if(element != 'Text') {
+          csvHeaderArry.push(element);
+        }
+      });
+
+      Object.keys(_via_attributes.file).forEach((element) => {
+        csvHeaderArry.push(element);
+      });
+
+
+      csvHeaderArry.push('RegionShape');
+      csvHeaderArry.push('RegionDetails');
+      csvHeaderArry.push('Filename');
+
+      csvheader = csvHeaderArry.join(',');
+
+      csvdata.push(csvheader);
+
+      var newsItemNo = 1;
+
+      for ( var image_id in _via_img_metadata ) {
+
+
+        var r = _via_img_metadata[image_id].regions;
+
+        if ( r.length !==0 ) {
+          for ( var i = 0; i < r.length; ++i ) {
+
+            var csvline = [];
+
+            var sattr = r[i].shape_attributes;
+            var rattr = r[i].region_attributes;
+            var cRegions = _via_img_metadata[image_id].regions;
+
+            if(rattr.Type == "Article") {
+
+
+              //Start a new line and add News item number.
+              var prefix = '\n' + newsItemNo;
+              csvline.push(prefix);
+
+              let mainBodyText = structuredClone(rattr.Text);
+
+              try {
+                csvline[1] = '"' + escape_for_csv(mainBodyText.match(new RegExp('HEADLINE: (.*)'))[1]) + '"';
+              } catch {
+                csvline[1] = 'NA';
+              }
+
+              try {
+                csvline[2] = '"' + escape_for_csv(mainBodyText.match(new RegExp('BYLINE: (.*)'))[1]) + '"';
+              } catch {
+                csvline[2] = 'NA';
+              }
+
+              let escapedBodyText = structuredClone(mainBodyText).replace(new RegExp('(HEADLINE: .*)'), '').replace(new RegExp('(BYLINE: .*)'), '').trim();
+
+
+              csvline[3] = '"' + escape_for_csv(rattr.Text.replace(new RegExp('(HEADLINE: .*)'), '').replace(new RegExp('(BYLINE: .*)'), '').trim()) + '"';
+
+
+              for (const key in rattr) {
+
+                if(key != 'Text') {
+
+                  if (typeof rattr[key] === "object") {
+                    var tempAr = [];
+                    for (const valKey in rattr[key]) {
+                      if (typeof rattr[key][valKey] === "boolean" && rattr[key][valKey] == true) {
+                        tempAr.push(valKey);
+                      }
+                    }
+                    csvline.push('"' + escape_for_csv(tempAr.join(', ')) + '"');
+                  } else {
+                    if (rattr[key] == '') {
+                      csvline.push('"' + escape_for_csv('NA') + '"');
+                    } else {
+                      csvline.push('"' + escape_for_csv(rattr[key]) + '"');
+                    }
+                  }
+
+                }
+              }
+
+              for(const key in _via_img_metadata[image_id].file_attributes) {
+                csvline.push('"' + escape_for_csv(_via_img_metadata[image_id].file_attributes[key]) + '"');
+              }
+
+              csvline.push(sattr.name);
+
+              var shapeDetails = structuredClone(sattr);
+              delete shapeDetails.name;
+              csvline.push('"' + escape_for_csv(map_to_json(shapeDetails)) + '"');
+
+
+              csvline.push('"' + escape_for_csv(_via_img_metadata[image_id].filename) + '"');
+              csvdata.push(csvline.join(VIA_CSV_SEP));
+              newsItemNo++;
+            }
           }
         } else {
           // @todo: reconsider this practice of adding an empty entry
@@ -3438,6 +3566,50 @@ function is_inside_region(px, py, descending_order) {
     i = i + del;
   }
   return -1;
+}
+
+function nat_is_inside_this_region(px, py, region_id) {
+  var attr   = _via_img_metadata[_via_image_id].regions[region_id].shape_attributes; //_via_canvas_regions[region_id].shape_attributes;
+  var result = false;
+  switch ( attr['name'] ) {
+    case VIA_REGION_SHAPE.RECT:
+      result = is_inside_rect(attr['x'],
+          attr['y'],
+          attr['width'],
+          attr['height'],
+          px, py);
+      break;
+
+    case VIA_REGION_SHAPE.CIRCLE:
+      result = is_inside_circle(attr['cx'],
+          attr['cy'],
+          attr['r'],
+          px, py);
+      break;
+
+    case VIA_REGION_SHAPE.ELLIPSE:
+      result = is_inside_ellipse(attr['cx'],
+          attr['cy'],
+          attr['rx'],
+          attr['ry'],
+          attr['theta'],
+          px, py);
+      break;
+
+    case VIA_REGION_SHAPE.POLYLINE: // handled by POLYGON
+    case VIA_REGION_SHAPE.POLYGON:
+      result = is_inside_polygon(attr['all_points_x'],
+          attr['all_points_y'],
+          px, py);
+      break;
+
+    case VIA_REGION_SHAPE.POINT:
+      result = is_inside_point(attr['cx'],
+          attr['cy'],
+          px, py);
+      break;
+  }
+  return result;
 }
 
 function is_inside_this_region(px, py, region_id) {
@@ -7699,11 +7871,11 @@ async function project_file_add_local(event) {
 
         }
 
-        nat_update_file_attribute(new_img_index_list, 'Publication', publicationName);
-        nat_update_file_attribute(new_img_index_list, 'Date', newsDate);
-        nat_update_file_attribute(new_img_index_list, 'Volume', volumeInfo);
-        nat_update_file_attribute(new_img_index_list, 'Issue', issueInfo);
-        nat_update_file_attribute(new_img_index_list, 'Page', pageNo);
+        nat_update_file_attribute(new_img_id, 'Publication', publicationName);
+        nat_update_file_attribute(new_img_id, 'Date', newsDate);
+        nat_update_file_attribute(new_img_id, 'Volume', volumeInfo);
+        nat_update_file_attribute(new_img_id, 'Issue', issueInfo);
+        nat_update_file_attribute(new_img_id, 'Page', pageNo);
 
 
       } else {
@@ -7737,13 +7909,8 @@ async function project_file_add_local(event) {
   }
 }
 
-function nat_update_file_attribute(imgIndex, attrToUpdate, newValue) {
-  annotation_editor_update_file_metadata(imgIndex, attrToUpdate, newValue, undefined).then( function(update_count) {
-    annotation_editor_on_metadata_update_done('file', attrToUpdate, update_count);
-  }, function(err) {
-    console.log(err)
-    show_message('Failed to update file attributes! ' + err);
-  });
+function nat_update_file_attribute(imgID, attrToUpdate, newValue) {
+  _via_img_metadata[imgID].file_attributes[attrToUpdate] = newValue;
 }
 
 

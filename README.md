@@ -1,42 +1,35 @@
-# Newspaper Annotation Tool (NAT)
+# Newspaper Coding Tool (NCT)
 
-Newspaper Annotation Tool (NAT) is an open-source tool designed to assist media researchers and academicians in coding newspapers faster for content analysis. NAT is built by modifying the code of VGG Image Annotator version 2.
+Newspaper Coding Tool (NCT) is an open-source application designed for researchers to perform content coding and annotation on newspaper images. Developed by modifying the VGG Image Annotator (VIA), NCT allows users to annotate newspaper images with attributes tailored for content analysis.
 
 ## Features
+- **User-Friendly Interface**: Simple to use; download the `index.html` and open it in any modern web browser.
+- **Image Support**: Supports image files (PDF not supported presently).
+- **Core Attributes**:
+    - **Type**: Values include Article, Byline, Body, Lead, and Item.
+    - **Text**: Input text manually or using OCR with AWS Textract.
+    - **Codes**: Add coding categories.
+    - **Notes**: Add helpful notes while coding.
+- **AWS Textract Integration**: Use AWS Textract for OCR by connecting with AWS Lambda Function URL.
+- **Export Annotations**: Export annotated data as a CSV file for further analysis.
+- **Custom Attributes**: Add additional attributes to suit your research needs.
 
-- **Automatic Attribute Extraction**: Extracts publication, date, page, volume, and issue information from the file name and automatically reflects that in the file attributes.
-- **Common Region Attributes**: Adds common region attributes like headline, byline, and body.
-- **CSV Export**: Coded data can be exported in CSV format for easy import into different data analysis software.
+## Getting Started
+1. **Download** the `index.html` file.
+2. **Copy** the `index.html` file to the directory containing your newspaper images.
+3. **Open** the `index.html` file in any modern web browser.
+4. **Add Pages**: Load your image files into the application.
+5. **Draw Regions**: Use the rectangle or polygon tool to annotate regions.
+6. **Annotate and Code**: Annotate regions using different attributes.
 
-## Installation
-
-To use NAT, download the release package and open the `index.html` file in your web browser.
+### AWS Textract Setup
+1. **AWS Account**: Ensure you have an AWS account.
+2. **CloudFormation Template**: Use the [CloudFormation template](https://console.aws.amazon.com/cloudformation/home#/stacks/create/review?stackName=NCTStandaloneAnalyseDocument&templateURL=https://nctappsource.s3.ap-south-1.amazonaws.com/NCTOCRTemplate.yaml) to set up the necessary AWS Lambda function.
+3. **API Key**: Generate an API key and save it along with the Function URL in the application's settings.
 
 ## Usage
-
-1. **Add Images**: Presently, only individual image files can be added.
-2. **Add Additional Attributes**: You can add additional attributes according to your needs, like the type of content (Ad, Article, Classified, etc.).
-3. **Annotate**: Use the annotation tool to mark regions and add attributes such as headline, byline, and body using the Annotation Editor.
-4. **Export**: Once the annotations are complete, export the data as a NAT CSV file for further analysis.
-
-
-## Future Roadmap
-
-Following are the features and enhancements that are planned for the future development:
-
-1. [ ] Add PDF support: Presently only individual images can be added.
-2. [ ] OCR support: An optional feature to be able to connect to text extraction services like AWS Textract.
-
-## License
-
-This project is licensed under the BSD 2-Clause "Simplified" License.
-
-## Acknowledgements
-
-NAT is built by modifying the code of VGG Image Annotator version 2.
-
-## Contact
-
-NAT was developed by Mohit Dhanjani, a Senior Research Fellow at the School of Media and Communication, Manipal University Jaipur. For any questions or suggestions, feel free to open an issue.
-
----
+1. **Select Type Attribute**: Choose appropriate values for Type (e.g., Headline, Byline, Body, Lead).
+2. **Input Text**: Manually enter text or use OCR.
+3. **Add Codes**: Categorize content with coding categories.
+4. **Annotate**: Ensure each article component (Headline, Byline, Lead, Body) is part of an Article container.
+5. **Export**: Once done, export the annotations as a CSV file for further analysis in software like Excel or R.

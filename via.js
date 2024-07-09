@@ -4210,6 +4210,16 @@ function _via_handle_global_keydown_event(e) {
     return;
   }
 
+  if ( e.key === "1") {
+    select_region_shape('rect');
+    return;
+  }
+
+  if ( e.key === "2") {
+    select_region_shape('polygon');
+    return;
+  }
+
   // if ( e.key === 'a' ) {
   //   if ( _via_display_area_content_name === VIA_DISPLAY_AREA_CONTENT_NAME.IMAGE_GRID ) {
   //     // select all in image grid

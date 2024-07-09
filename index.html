@@ -2,42 +2,9 @@
 <html lang="en">
   <head>
     <meta charset="UTF-8">
-    <!--
-        VGG Image Annotator (via)
-        www.robots.ox.ac.uk/~vgg/software/via/
-
-        Copyright (c) 2016-2018, Abhishek Dutta, Visual Geometry Group, Oxford University and VIA Contributors..
-        All rights reserved.
-
-        Redistribution and use in source and binary forms, with or without
-        modification, are permitted provided that the following conditions are met:
-
-        Redistributions of source code must retain the above copyright notice, this
-        list of conditions and the following disclaimer.
-        Redistributions in binary form must reproduce the above copyright notice,
-        this list of conditions and the following disclaimer in the documentation
-        and/or other materials provided with the distribution.
-        THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-        AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-        IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-        ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT HOLDER OR CONTRIBUTORS BE
-        LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-        CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-        SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-        INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-        CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-        ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE
-        POSSIBILITY OF SUCH DAMAGE.
-      -->
-    <title>Newspaper Annotation Tool</title>
+    <title>Newspaper Coding Tool</title>
     <meta name="author" content="Mohit Dhanjani">
-    <meta name="description" content="Newspaper Annotation Tool (NAT) is an open-source tool designed to assist media researchers and academicians in coding newspapers faster for content analysis.">
-
-    <!--
-    Development of VIA is supported by the EPSRC programme grant
-    Seebibyte: Visual Search for the Era of Big Data (EP/M013774/1).
-    Using Google Analytics, we record the usage of this application.
-    This data is used in reporting of this programme grant. -->
+    <meta name="description" content="Newspaper Coding Tool (NAT) is an open-source tool designed to assist media researchers and academicians in coding newspapers faster for content analysis.">
 
     <link rel="stylesheet" type="text/css" href="via.css">
   </head>
@@ -175,7 +142,7 @@
     <div id="annotation_editor_panel">
       <div class="button_panel">
         <span class="text_button" onclick="edit_region_metadata_in_annotation_editor()" id="button_edit_region_metadata" title="Manual annotations of regions">Region Annotations</span>
-        <span class="text_button" onclick="edit_file_metadata_in_annotation_editor()" id="button_edit_file_metadata" title="Manual annotations of a file">File Annotations</span>
+        <span class="text_button" onclick="edit_file_metadata_in_annotation_editor()" id="button_edit_file_metadata" title="Manual annotations of a page">Page Annotations</span>
 
         <span class="button" style="float:right;margin-right:0.2rem;" onclick="annotation_editor_toggle_all_regions_editor()" title="Close this window of annotation editor">&times;</span>
         <span class="button" style="float:right;margin-right:0.2rem;" onclick="annotation_editor_increase_panel_height()" title="Increase the height of this panel">&uarr;</span>
@@ -193,8 +160,8 @@
           <li onclick="show_home_panel()" style="cursor:pointer;">Home</li>
           <li>Project
             <ul>
-              <li onclick="project_open_select_project_file()" title="Load a VIA project (from a JSON file)">Load</li>
-              <li onclick="project_save_with_confirm()" title="Save this VIA project (as a JSON file)">Save</li>
+              <li onclick="project_open_select_project_file()" title="Load a project (from a JSON file)">Load</li>
+              <li onclick="project_save_with_confirm()" title="Save this project (as a JSON file)">Save</li>
               <li onclick="settings_panel_toggle()" title="Show/edit project settings">Settings</li>
               <li class="submenu_divider"></li>
               <li onclick="sel_local_images()" title="Add images locally stored in this computer">Add local files</li>
@@ -210,17 +177,24 @@
 
           <li>Annotation
             <ul>
-              <li onclick="download_all_region_data('csv')" title="Export annotations to a CSV file">Export Annotations (as csv)</li>
-              <li onclick="download_all_region_data('json')" title="Export annotaitons to a JSON file">Export Annotations (as json)</li>
-              <li onclick="download_all_region_data('coco', 'json')" title="Export annotaitons to COCO (http://cocodataset.org) format">Export Annotations (COCO format)</li>
-              <li onclick="download_all_region_data('nat', 'csv')" title="Export annotaitons to NAT CSV">Export Annotations (as NAT CSV)</li>
+                <li onclick="select_region_shape('rect')" title="">Rectangle</li>
+                <li onclick="select_region_shape('polygon')" title="">Polygon</li>
+                <li onclick="" class="submenu_divider"></li>
+                <li onclick="document.getElementById('generateTextBridge').click()" title="">Generate Article and Item Texts</li>
+                <li id="ocrMenuItem" onclick="document.getElementById('ocrBridge').click()" title="">OCR using AWS Textract</li>
+                <li onclick="" class="submenu_divider"></li>
+              <li style="display: none" onclick="download_all_region_data('csv')" title="Export annotations to a CSV file">Export Annotations (as csv)</li>
+              <li style="display: none" onclick="download_all_region_data('json')" title="Export annotaitons to a JSON file">Export Annotations (as json)</li>
+              <li style="display: none" onclick="download_all_region_data('coco', 'json')" title="Export annotaitons to COCO (http://cocodataset.org) format">Export Annotations (COCO format)</li>
+                <li onclick="download_all_region_data('natV2', 'csv')" title="Export annotaitons to NCT V2 CSV">Export Annotations (Articles and Items)</li>
+                <li onclick="download_all_region_data('nat', 'csv')" title="Export annotaitons to NCT CSV">Export Annotations (All)</li>
               <li onclick="" class="submenu_divider"></li>
-              <li onclick="sel_local_data_file('annotations')" title="Import annotations from a CSV file">Import Annotations (from csv)</li>
-              <li onclick="sel_local_data_file('annotations')" title="Import annotations from a JSON file">Import Annotations (from json)</li>
-              <li onclick="sel_local_data_file('annotations_coco')" title="Import annotations from a COCO (http://cocodataset.org) formatted JSON file">Import Annotations (COCO format)</li>
+              <li style="display: none" onclick="sel_local_data_file('annotations')" title="Import annotations from a CSV file">Import Annotations (from csv)</li>
+              <li style="display: none" onclick="sel_local_data_file('annotations')" title="Import annotations from a JSON file">Import Annotations (from json)</li>
+              <li style="display: none" onclick="sel_local_data_file('annotations_coco')" title="Import annotations from a COCO (http://cocodataset.org) formatted JSON file">Import Annotations (COCO format)</li>
 
               <li class="submenu_divider"></li>
-              <li onclick="show_annotation_data()" title="Show a preview of annotations (opens in a new browser windows)">Preview Annotations</li>
+              <li style="display: none" onclick="show_annotation_data()" title="Show a preview of annotations (opens in a new browser windows)">Preview Annotations</li>
               <li onclick="download_as_image()" title="Download an image containing the annotations">Download as Image</li>
             </ul>
           </li>
@@ -243,13 +217,13 @@
 
           <li>Help
             <ul>
-              <li onclick="set_display_area_content(VIA_DISPLAY_AREA_CONTENT_NAME.PAGE_GETTING_STARTED)" title="Show a guide to get started with this application">Getting Started</li>
-              <li title="Visit the project page for this application"><a href="http://www.robots.ox.ac.uk/~vgg/software/via/" target="_blank">VGG Project Page</a></li>
-              <li onclick="" title="Report an issue to the developers of this application (requires an account at gitlab.com)"><a href="https://gitlab.com/vgg/via/issues" target="_blank">Report issues</a></li>
+              <li style="display: none" onclick="set_display_area_content(VIA_DISPLAY_AREA_CONTENT_NAME.PAGE_GETTING_STARTED)" title="Show a guide to get started with this application">Getting Started</li>
+              <li title="Visit the project page for this application"><a href="https://github.com/MohitDhanjani/NewspaperCodingTool" target="_blank">NCT Project Page</a></li>
+              <li onclick="" title="Report an issue to the developers of this application (requires an account at github.com)"><a href="https://github.com/MohitDhanjani/NewspaperCodingTool/issues" target="_blank">Report issues</a></li>
               <li class="submenu_divider"></li>
-              <li><a target="_blank" href="https://gitlab.com/vgg/via/blob/master/Contributors.md" title="List of people who have contributed towards the development of VIA">Contributors</a></li>
+              <li style="display: none"><a target="_blank" href="https://gitlab.com/vgg/via/blob/master/Contributors.md" title="List of people who have contributed towards the development of VIA">Contributors</a></li>
               <li onclick="set_display_area_content(VIA_DISPLAY_AREA_CONTENT_NAME.PAGE_LICENSE)" title="View license of this application">License</li>
-              <li onclick="set_display_area_content(VIA_DISPLAY_AREA_CONTENT_NAME.PAGE_ABOUT)" title="Show more details about this application">About VIA</li>
+              <li onclick="set_display_area_content(VIA_DISPLAY_AREA_CONTENT_NAME.PAGE_ABOUT)" title="Show more details about this application">About NCT</li>
             </ul>
           </li>
 
@@ -266,7 +240,7 @@
         -->
 
         <svg onclick="sel_local_data_file('annotations')" style="margin-left:1rem;" viewbox="0 0 24 24"><use xlink:href="#icon_fileupload"></use><title>Import Annotations from CSV</title></svg>
-        <svg onclick="download_all_region_data('csv')" viewbox="0 0 24 24"><use xlink:href="#icon_filedownload"></use><title>Download Annotations as CSV</title></svg>
+        <svg onclick="download_all_region_data('natV2', 'csv')" viewbox="0 0 24 24"><use xlink:href="#icon_filedownload"></use><title>Download Annotations as CSV</title></svg>
 
         <svg onclick="image_grid_toggle()" id="toolbar_image_grid_toggle" style="margin-left:1rem;" viewbox="0 0 24 24"><use xlink:href="#icon_gridon"></use><title>Switch to Image Grid View</title></svg>
         <svg onclick="annotation_editor_toggle_all_regions_editor()" viewbox="0 0 24 24"><use xlink:href="#icon_insertcomment"></use><title>Toggle Annotation Editor</title></svg>
@@ -275,7 +249,7 @@
         <svg onclick="toggle_img_fn_list_visibility()" viewbox="0 0 24 24"><use xlink:href="#icon_list"></use><title>Toggle Filename List</title></svg>
         <svg onclick="move_to_next_image()" viewbox="0 0 24 24"><use xlink:href="#icon_next"></use><title>Next</title></svg>
 
-        <svg onclick="zoom_in()" style="margin-left:1rem;" viewbox="0 0 24 24"><use xlink:href="#icon_zoomin"></use><title>Zoom In</title></svg>
+        <svg id="zoomInSvgBtn" onclick="zoom_in()" style="margin-left:1rem;" viewbox="0 0 24 24"><use xlink:href="#icon_zoomin"></use><title>Zoom In</title></svg>
         <svg onclick="zoom_out()" viewbox="0 0 24 24"><use xlink:href="#icon_zoomout"></use><title>Zoom Out</title></svg>
 
         <svg onclick="sel_all_regions()" viewbox="0 0 24 24" style="margin-left:1rem;"><use xlink:href="#icon_selectall"></use><title>Select All Regions</title></svg>
@@ -284,10 +258,10 @@
         <svg onclick="paste_to_multiple_images_with_confirm()" viewbox="0 0 24 24"><use xlink:href="#icon_pasten"></use><title>Paste Region in Multiple Images</title></svg>
         <svg onclick="del_sel_regions_with_confirm()" viewbox="0 0 24 24"><use xlink:href="#icon_pasteundo"></use><title>Undo Regions Pasted in Multiple Images</title></svg>
         <svg onclick="del_sel_regions()" viewbox="0 0 24 24"><use xlink:href="#icon_close"></use><title>Delete Region</title></svg>
-
       </div>
       <!-- end of shortcut toolbar -->
       <input type="file" id="invisible_file_input" name="files[]" style="display:none">
+
     </div> <!-- endof #top_panel -->
 
     <!-- Middle Panel contains a left-sidebar and image display areas -->
@@ -308,11 +282,11 @@
         <div class="leftsidebar_accordion_panel show">
           <ul class="region_shape">
             <li id="region_shape_rect" class="selected" onclick="select_region_shape('rect')" title="Rectangle (Shortcut key 1)"><svg height="32" viewbox="0 0 32 32"><use xlink:href="#shape_rectangle"></use></svg></li>
-            <li id="region_shape_circle" onclick="select_region_shape('circle')" title="Circle (Shortcut key 2)"><svg height="32" viewbox="0 0 32 32"><use xlink:href="#shape_circle"></use></svg></li>
-            <li id="region_shape_ellipse" onclick="select_region_shape('ellipse')" title="Ellipse (Shortcut key 3)"><svg height="32" viewbox="0 0 32 32"><use xlink:href="#shape_ellipse"></use></svg></li>
+            <li id="region_shape_circle" style="display: none" onclick="select_region_shape('circle')" title="Circle (Shortcut key 2)"><svg height="32" viewbox="0 0 32 32"><use xlink:href="#shape_circle"></use></svg></li>
+            <li id="region_shape_ellipse" style="display: none" onclick="select_region_shape('ellipse')" title="Ellipse (Shortcut key 3)"><svg height="32" viewbox="0 0 32 32"><use xlink:href="#shape_ellipse"></use></svg></li>
             <li id="region_shape_polygon" onclick="select_region_shape('polygon')" title="Polygon (Shortcut key 4)"><svg height="32" viewbox="0 0 32 32"><use xlink:href="#shape_polygon"></use></svg></li>
-            <li id="region_shape_point" onclick="select_region_shape('point')" title="Point (Shortcut key 5)"><svg height="32" viewbox="0 0 32 32"><use xlink:href="#shape_point"></use></svg></li>
-            <li id="region_shape_polyline" onclick="select_region_shape('polyline')" title="Polyline (Shortcut key 6)"><svg height="32" viewbox="0 0 32 32"><use xlink:href="#shape_polyline"></use></svg></li>
+            <li id="region_shape_point" style="display: none" onclick="select_region_shape('point')" title="Point (Shortcut key 5)"><svg height="32" viewbox="0 0 32 32"><use xlink:href="#shape_point"></use></svg></li>
+            <li id="region_shape_polyline" style="display: none" onclick="select_region_shape('polyline')" title="Polyline (Shortcut key 6)"><svg height="32" viewbox="0 0 32 32"><use xlink:href="#shape_polyline"></use></svg></li>
           </ul>
           <div id="region_info" class="display_none">&nbsp;</div>
         </div>
@@ -343,8 +317,8 @@
           <div id="img_fn_list"></div>
           <p>
             <div class="button_panel">
-              <span class="button" onclick="sel_local_images()" title="Add new file from local disk">Add Files</span>
-              <span class="button" onclick="project_file_add_url_with_input()" title="Add new file using URL">Add URL</span>
+              <span id="addPages" class="button" onclick="sel_local_images()" title="Add new file from local disk">Add Pages</span>
+<!--              <span class="button" onclick="project_file_add_url_with_input()" title="Add new file using URL">Add URL</span>-->
               <span class="button" onclick="project_file_remove_with_confirm()" title="Remove selected file (i.e. file currently being shown) from project">Remove</span>
             </div>
           </p>
@@ -355,11 +329,11 @@
         <div class="leftsidebar_accordion_panel" id="attributes_editor_panel">
           <div class="button_panel" style="padding:1rem 0;">
             <span class="text_button" onclick="show_region_attributes_update_panel()" id="button_show_region_attributes" title="Show region attributes">Region</span>
-            <span class="text_button" onclick="show_file_attributes_update_panel()" id="button_show_file_attributes" title="Show file attributes">File</span>
+            <span class="text_button" onclick="show_file_attributes_update_panel()" id="button_show_file_attributes" title="Show page attributes">Page</span>
           </div>
           <div id="attributes_update_panel">
             <div class="button_panel">
-              <input style="width:70%" type="text" placeholder="attribute name" id="user_input_attribute_id" value="">
+              <input style="width:70%" type="text" placeholder="Add new attribute" id="user_input_attribute_id" value="">
               <span id="button_add_new_attribute" class="button" onclick="add_new_attribute_from_user_input()" title="Add new attribute">&plus;</span>
               <span id="button_del_attribute" class="button" onclick="delete_existing_attribute_with_confirm()" title="Delete existing attribute">&minus;</span>
             </div>
@@ -376,7 +350,7 @@
 
         <button class="leftsidebar_accordion">Keyboard Shortcuts</button>
         <div class="leftsidebar_accordion_panel">
-          <div style="display:block; text-align:center; padding:1rem;">Available only on image focus</div>
+          <div style="display:block; text-align:center; padding:1rem;">Available only on page focus</div>
           <table>
             <tr>
               <td style="width:8em;"><span class="key">&larr;</span>&nbsp;<span class="key">&uarr;</span>&nbsp;<span class="key">&rarr;</span>&nbsp;<span class="key">&darr;</span></td>
@@ -384,17 +358,28 @@
             </tr>
             <tr>
               <td><span class="key">a</span></td>
-              <td>Select all regions</td>
+              <td>Changes selected region's Type to Article</td>
             </tr>
-
-            <tr>
-              <td><span class="key">c</span></td>
-              <td>Copy selected regions</td>
-            </tr>
-            <tr>
-              <td><span class="key">v</span></td>
-              <td>Paste selected regions</td>
-            </tr>
+              <tr>
+                  <td><span class="key">h</span></td>
+                  <td>Changes selected region's Type to Headline</td>
+              </tr>
+              <tr>
+                  <td><span class="key">b</span></td>
+                  <td>Changes selected region's Type to Body</td>
+              </tr>
+              <tr>
+                  <td><span class="key">l</span></td>
+                  <td>Changes selected region's Type to Lead</td>
+              </tr>
+              <tr>
+                  <td><span class="key">y</span></td>
+                  <td>Changes selected region's Type to Byline</td>
+              </tr>
+              <tr>
+                  <td><span class="key">i</span></td>
+                  <td>Changes selected region's Type to Item</td>
+              </tr>
             <tr>
               <td><span class="key">d</span></td>
               <td>Delete selected regions</td>
@@ -403,14 +388,7 @@
               <td><span class="key">Ctrl</span> + Wheel</td>
               <td>Zoom in/out (mouse cursor is over image)</td>
             </tr>
-            <tr>
-              <td><span class="key">l</span></td>
-              <td>Toggle region label</td>
-            </tr>
-            <tr>
-              <td><span class="key">b</span></td>
-              <td>Toggle region boundary</td>
-            </tr>
+
             <tr>
               <td><span class="key">Enter</span></td>
               <td>Finish drawing polyshape</td>
@@ -609,23 +587,24 @@
 
           <div class="row">
             <div class="variable">
-              <div class="name">AWS ID</div>
-              <div class="desc">Images are preloaded in buffer to allow smoother navigation of next/prev images. A large buffer size may slow down the overall browser performance. To disable preloading, set buffer size to 0.</div>
+              <div class="name">AWS Lambda Function URL</div>
+              <div class="desc">HTTPS URL of the function URL that will receive the base64 encoded image and return AWS Textract response.</div>
             </div>
             <div class="value">
-              <input type="text" id="_via_settings.nat.awsID" />
+              <input type="text" id="_via_settings.nat.lambda_url" />
             </div>
           </div>
 
-          <div class="row">
-            <div class="variable">
-              <div class="name">Access Token</div>
-              <div class="desc">Images are preloaded in buffer to allow smoother navigation of next/prev images. A large buffer size may slow down the overall browser performance. To disable preloading, set buffer size to 0.</div>
+            <div class="row">
+                <div class="variable">
+                    <div class="name">AWS Lambda Function API Key</div>
+                    <div class="desc">API Key that will sent in the X-NAT-APIKEY header.</div>
+                </div>
+                <div class="value">
+                    <input type="text" id="_via_settings.nat.lambda_api_key" />
+                </div>
             </div>
-            <div class="value">
-              <input type="text" id="_via_settings.nat.awsToken" />
-            </div>
-          </div>
+
 
           <div class="row" style="border:none;">
             <button onclick="settings_save()" value="save_settings" style="margin-top:2rem">Save</button>
@@ -730,28 +709,11 @@
         </div>
 
         <div id="page_about" class="display_area_content display_none" style="width:40rem !important">
-          <div style="text-align:center">
-            <a href="http://www.robots.ox.ac.uk/~vgg/software/via/">
-              <svg height="160" viewbox="0 0 400 160" style="background-color:#212121;">
-                <use xlink:href="#via_logo"></use>
-              </svg>
-            </a>
-          </div>
 
-          <p style="font-family:mono; font-size:0.8em;text-align:center;"><a href="https://gitlab.com/vgg/via/blob/master/CHANGELOG">Version 2.0.12</a></p>
-          <p>VGG Image Annotator (VIA) is an image annotation tool that can be used to define regions in an image and create textual descriptions of those regions. VIA is an <a href="https://gitlab.com/vgg/via/">open source project</a> developed at the <a href="http://www.robots.ox.ac.uk/~vgg/">Visual Geometry Group</a> and released under the BSD-2 clause <a href="https://gitlab.com/vgg/via/blob/master/LICENSE">license</a>.</p>
-          <p>Here is a list of some salient features of VIA:
-            <ul>
-              <li>based solely on HTML, CSS and Javascript (no external javascript libraries)</li>
-              <li>can be used off-line (full application in a single html file of size &lt; 400KB)</li>
-              <li>requires nothing more than a modern web browser (tested on Firefox, Chrome and Safari)</li>
-              <li>supported region shapes: rectangle, circle, ellipse, polygon, point and polyline</li>
-              <li>import/export of region data in csv and json file format</li>
-            </ul>
-          </p>
-          <p>For more details, visit <a href="http://www.robots.ox.ac.uk/~vgg/software/via/">http://www.robots.ox.ac.uk/~vgg/software/via/</a>.</p>
+
+          <p>Newspaper Coding Tool (NCT) is a powerful, open-source tool designed to facilitate the content coding and annotation of newspaper images. Built by modifying the VGG Image Annotator (VIA), NCT provides researchers with a versatile platform to annotate newspaper images with custom attributes and export data for analysis. With integration for AWS Textract, users can leverage OCR capabilities to enhance their annotation process. Note that NAT is solely for coding and annotation; data export in CSV format can be analyzed using software like Excel or R.</p>
           <p>&nbsp;</p>
-          <p>Copyright &copy; 2016-2021, <a href="mailto:adutta-removeme@robots.ox.ac.uk">Abhishek Dutta</a>,Visual Geometry Group, Oxford University and <a target="_blank" href="https://gitlab.com/vgg/via/blob/master/Contributors.md">VIA Contributors</a>.</p>
+          <p>Developed by Mohit Dhanjani (Manipal University Jaipur) by modifying VGG Image Annotator (VIA) application developed by Abhishek Dutta (Visual Geometry Group, Oxford University) and VIA Contributors.</p>
         </div> <!-- end of page_about -->
 
         <div id="page_license" class="display_area_content display_none narrow_page_content">
@@ -787,9 +749,12 @@ POSSIBILITY OF SUCH DAMAGE.
          items like Keyboard Shortcut hidden under the attributes panel -->
     <div style="width: 100%;" id="vertical_space"></div>
 
-    <!-- DEMO SCRIPT AUTOMATICALLY INSERTED BY VIA PACKER SCRIPT -->
+    <button id="ocrBridge" style="display: none"></button>
+    <button id="generateTextBridge" style="display: none"></button>
+
 
     <script src="via.js"></script>
     <script src="NewspaperAnnotationTool.js"></script>
+    <script src="dist/main.js"></script>
   </body>
 </html>

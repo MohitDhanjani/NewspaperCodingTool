@@ -101,7 +101,7 @@ var VIA_REGION_SHAPES_POINTS_RADIUS = 3;
 var VIA_REGION_POINT_RADIUS         = 3;
 var VIA_REGION_POINT_RADIUS_DEFAULT = 3;
 
-var VIA_THEME_REGION_BOUNDARY_WIDTH = 3;
+var VIA_THEME_REGION_BOUNDARY_WIDTH = 1;
 var VIA_THEME_BOUNDARY_LINE_COLOR   = "black";
 var VIA_THEME_BOUNDARY_FILL_COLOR   = "yellow";
 var VIA_THEME_SEL_REGION_FILL_COLOR = "#808080";
@@ -270,7 +270,7 @@ _via_settings.ui.image_grid.show_region_shape   = true;
 _via_settings.ui.image_grid.show_image_policy   = 'all';
 
 _via_settings.ui.image = {};
-_via_settings.ui.image.region_label      = '__via_region_id__'; // default: region_id
+_via_settings.ui.image.region_label      = 'Type'; // default: region_id
 _via_settings.ui.image.region_color      = '__via_default_region_color__'; // default color: yellow
 _via_settings.ui.image.region_label_font = '10px Sans';
 _via_settings.ui.image.on_image_annotation_editor_placement = VIA_ANNOTATION_EDITOR_PLACEMENT.NEAR_REGION;
@@ -279,6 +279,17 @@ _via_settings.core                  = {};
 _via_settings.core.buffer_size      = 4*VIA_IMG_PRELOAD_COUNT + 2;
 _via_settings.core.filepath         = {};
 _via_settings.core.default_filepath = '';
+
+//NAT related settings.
+_via_settings.nat = {}
+_via_settings.nat.lambda_url = '';
+_via_settings.nat.lambda_api_key = '';
+_via_settings.nat.colHOverlapThresh = 0.1;
+_via_settings.nat.colHMultilineUnionThresh = 0.1;
+_via_settings.nat.paraVDistTol = 0;
+_via_settings.nat.paraLineHeightTol = 0;
+_via_settings.nat.paraIndentThresh = 0;
+
 
 // UI html elements
 var invisible_file_input = document.getElementById("invisible_file_input");
@@ -1310,7 +1321,24 @@ function pack_via_metadata(return_type) {
 
             var rattr = r[i].region_attributes;
             for (const key in rattr) {
-                csvline.push('"' + escape_for_csv(rattr[key]) + '"');
+
+              if(typeof rattr[key] === "object") {
+                var tempAr = [];
+                for (const valKey in rattr[key]) {
+                  if(typeof rattr[key][valKey] === "boolean" && rattr[key][valKey] == true) {
+                    tempAr.push(valKey);
+                  }
+                }
+                csvline.push('"' + escape_for_csv(tempAr.join(', ')) + '"');
+              } else {
+                if(rattr[key] == '') {
+                  csvline.push('"' + escape_for_csv('NA') + '"');
+                } else {
+                  csvline.push('"' + escape_for_csv(rattr[key]) + '"');
+                }
+              }
+
+
             }
 
             csvline.push(sattr.name);
@@ -1320,14 +1348,160 @@ function pack_via_metadata(return_type) {
             csvline.push('"' + escape_for_csv(map_to_json(shapeDetails)) + '"');
 
 
-            csvline.push(escape_for_csv(_via_img_metadata[image_id].filename));
+            csvline.push('"' + escape_for_csv(_via_img_metadata[image_id].filename) + '"');
             csvdata.push( csvline.join(VIA_CSV_SEP) );
             newsItemNo++;
           }
-        } else {
-          // @todo: reconsider this practice of adding an empty entry
-          csvdata.push(prefix + ',0,0,"{}","{}"');
         }
+        // else {
+        //   // @todo: reconsider this practice of adding an empty entry
+        //   csvdata.push(prefix + ',0,0,"{}","{}"');
+        // }
+      }
+      ok_callback(csvdata);
+    }
+
+    if(return_type === 'natV2') {
+      var csvdata = [];
+      var csvheader = '';
+
+      var csvHeaderArry = [];
+
+
+      var newsItemNo = 1;
+
+      csvHeaderArry.push('NewsItemNo');
+
+      csvHeaderArry.push('Headline');
+      csvHeaderArry.push('Byline');
+      csvHeaderArry.push('Body');
+
+      Object.keys(_via_attributes.region).forEach((element) => {
+
+        console.log(element);
+        if(!['Text'].includes(element)) {
+
+          if (_via_attributes.region[element].type === "checkbox") {
+            Object.keys(_via_attributes.region[element].options).forEach((option) => {
+              if(option !== undefined) {
+                csvHeaderArry.push(option);
+              }
+            });
+          } else {
+            csvHeaderArry.push(element);
+          }
+        }
+      });
+
+      Object.keys(_via_attributes.file).forEach((element) => {
+        csvHeaderArry.push(element);
+      });
+
+
+      csvHeaderArry.push('RegionShape');
+      csvHeaderArry.push('RegionDetails');
+      csvHeaderArry.push('Filename');
+
+      csvheader = csvHeaderArry.join(',');
+
+      csvdata.push(csvheader);
+
+      for ( var image_id in _via_img_metadata ) {
+
+
+        var r = _via_img_metadata[image_id].regions;
+
+        if ( r.length !==0 ) {
+
+          for ( var i = 0; i < r.length; ++i ) {
+
+            var csvline = [];
+
+            var sattr = r[i].shape_attributes;
+            var rattr = r[i].region_attributes;
+            var cRegions = _via_img_metadata[image_id].regions;
+
+            if(i == 0) {
+
+
+            }
+
+            if(rattr.Type == "Article" || rattr.Type == "Item") {
+
+
+              //Start a new line and add News item number.
+              var prefix = '\n' + newsItemNo;
+              csvline.push(prefix);
+
+              let mainBodyText = structuredClone(rattr.Text);
+
+              try {
+                csvline[1] = '"' + escape_for_csv(mainBodyText.match(new RegExp('HEADLINE: (.*)'))[1]) + '"';
+              } catch {
+                csvline[1] = 'NA';
+              }
+
+              try {
+                csvline[2] = '"' + escape_for_csv(mainBodyText.match(new RegExp('BYLINE: (.*)'))[1]) + '"';
+              } catch {
+                csvline[2] = 'NA';
+              }
+
+              let escapedBodyText = structuredClone(mainBodyText).replace(new RegExp('(HEADLINE: .*)'), '').replace(new RegExp('(BYLINE: .*)'), '').trim();
+
+
+              csvline[3] = '"' + escape_for_csv(rattr.Text.replace(new RegExp('(HEADLINE: .*)'), '').replace(new RegExp('(BYLINE: .*)'), '').trim()) + '"';
+
+
+              for (const key in rattr) {
+
+                if(key != 'Text') {
+
+                  if (typeof rattr[key] === "object") {
+                    var tempAr = [];
+                    Object.keys(_via_attributes.region[key].options).forEach((option) => {
+                      var yesOrNo = 'FALSE';
+                      for (const valKey in rattr[key]) {
+                        if(valKey == option) {
+                          yesOrNo = 'TRUE'
+                        }
+                      }
+                      csvline.push('"' + escape_for_csv(yesOrNo) + '"');
+                    });
+
+                    //csvline.push('"' + escape_for_csv(tempAr.join(', ')) + '"');
+                  } else {
+                    if (rattr[key] == '') {
+                      csvline.push('"' + escape_for_csv('NA') + '"');
+                    } else {
+                      csvline.push('"' + escape_for_csv(rattr[key]) + '"');
+                    }
+                  }
+
+                }
+              }
+
+              for(const key in _via_img_metadata[image_id].file_attributes) {
+                csvline.push('"' + escape_for_csv(_via_img_metadata[image_id].file_attributes[key]) + '"');
+              }
+
+              csvline.push(sattr.name);
+
+              var shapeDetails = structuredClone(sattr);
+              delete shapeDetails.name;
+              csvline.push('"' + escape_for_csv(map_to_json(shapeDetails)) + '"');
+
+
+              csvline.push('"' + escape_for_csv(_via_img_metadata[image_id].filename) + '"');
+              csvdata.push(csvline.join(VIA_CSV_SEP));
+              newsItemNo++;
+            }
+          }
+        }
+        // else {
+        //   // @todo: reconsider this practice of adding an empty entry
+        //   csvdata.push(prefix + ',0,0,"{}","{}"');
+        // }
       }
       ok_callback(csvdata);
     }
@@ -1630,9 +1804,11 @@ function show_message(msg, t) {
   document.getElementById('message_panel_content').innerHTML = msg;
   document.getElementById('message_panel').style.display = 'block';
 
-  _via_message_clear_timer = setTimeout( function() {
-    document.getElementById('message_panel').style.display = 'none';
-  }, timeout);
+  if(t !== -1) {
+    _via_message_clear_timer = setTimeout( function() {
+      document.getElementById('message_panel').style.display = 'none';
+    }, timeout);
+  }
 }
 
 function _via_regions_group_color_init() {
@@ -3418,6 +3594,50 @@ function is_inside_region(px, py, descending_order) {
   return -1;
 }
 
+function nat_is_inside_this_region(px, py, region_id) {
+  var attr   = _via_img_metadata[_via_image_id].regions[region_id].shape_attributes; //_via_canvas_regions[region_id].shape_attributes;
+  var result = false;
+  switch ( attr['name'] ) {
+    case VIA_REGION_SHAPE.RECT:
+      result = is_inside_rect(attr['x'],
+          attr['y'],
+          attr['width'],
+          attr['height'],
+          px, py);
+      break;
+
+    case VIA_REGION_SHAPE.CIRCLE:
+      result = is_inside_circle(attr['cx'],
+          attr['cy'],
+          attr['r'],
+          px, py);
+      break;
+
+    case VIA_REGION_SHAPE.ELLIPSE:
+      result = is_inside_ellipse(attr['cx'],
+          attr['cy'],
+          attr['rx'],
+          attr['ry'],
+          attr['theta'],
+          px, py);
+      break;
+
+    case VIA_REGION_SHAPE.POLYLINE: // handled by POLYGON
+    case VIA_REGION_SHAPE.POLYGON:
+      result = is_inside_polygon(attr['all_points_x'],
+          attr['all_points_y'],
+          px, py);
+      break;
+
+    case VIA_REGION_SHAPE.POINT:
+      result = is_inside_point(attr['cx'],
+          attr['cy'],
+          px, py);
+      break;
+  }
+  return result;
+}
+
 function is_inside_this_region(px, py, region_id) {
   var attr   = _via_canvas_regions[region_id].shape_attributes;
   var result = false;
@@ -3890,7 +4110,7 @@ function rect_update_corner(corner_id, d, x, y, preserve_aspect_ratio) {
   }
 }
 
-function _via_update_ui_components() {
+function _via_update_ui_components(resetzoom = true) {
   if ( ! _via_current_image_loaded ) {
     return;
   }
@@ -3906,7 +4126,7 @@ function _via_update_ui_components() {
       _via_is_window_resized = true;
       _via_show_img(_via_image_index);
 
-      if (_via_is_canvas_zoomed) {
+      if (_via_is_canvas_zoomed && resetzoom === true) {
         reset_zoom_level();
       }
     }
@@ -3990,11 +4210,78 @@ function _via_handle_global_keydown_event(e) {
     return;
   }
 
-  if ( e.key === 'a' ) {
-    if ( _via_display_area_content_name === VIA_DISPLAY_AREA_CONTENT_NAME.IMAGE_GRID ) {
-      // select all in image grid
-      image_grid_group_toggle_select_all();
+  // if ( e.key === 'a' ) {
+  //   if ( _via_display_area_content_name === VIA_DISPLAY_AREA_CONTENT_NAME.IMAGE_GRID ) {
+  //     // select all in image grid
+  //     image_grid_group_toggle_select_all();
+  //   }
+  //   return
+  // }
+
+  //NAT related code.
+  if(e.key === 'h') {
+    if(_via_is_region_selected) {
+      _via_img_metadata[_via_image_id].regions[_via_user_sel_region_id].region_attributes['Type'] = 'Headline';
+      annotation_editor_on_metadata_update_done('region', 'Type', 1);
+      annotation_editor_update_content();
     }
+    return;
+  }
+
+  if(e.key === 'y') {
+    if(_via_is_region_selected) {
+      _via_img_metadata[_via_image_id].regions[_via_user_sel_region_id].region_attributes['Type'] = 'Byline';
+      annotation_editor_on_metadata_update_done('region', 'Type', 1);
+      annotation_editor_update_content();
+    }
+    return;
+  }
+
+  if(e.key === 'i') {
+    if(_via_is_region_selected) {
+      _via_img_metadata[_via_image_id].regions[_via_user_sel_region_id].region_attributes['Type'] = 'Item';
+      annotation_editor_on_metadata_update_done('region', 'Type', 1);
+      annotation_editor_update_content();
+    }
+    return;
+  }
+
+  if(e.key === 'b') {
+    if(_via_is_region_selected) {
+      _via_img_metadata[_via_image_id].regions[_via_user_sel_region_id].region_attributes['Type'] = 'Body';
+      annotation_editor_on_metadata_update_done('region', 'Type', 1);
+      annotation_editor_update_content();
+    }
+    return;
+  }
+
+  if(e.key === 'a') {
+    if(_via_is_region_selected) {
+      _via_img_metadata[_via_image_id].regions[_via_user_sel_region_id].region_attributes['Type'] = 'Article';
+      annotation_editor_on_metadata_update_done('region', 'Type', 1);
+      annotation_editor_update_content();
+    }
+    return;
+  }
+
+
+  if(e.key === 'l') {
+    if(_via_is_region_selected) {
+      _via_img_metadata[_via_image_id].regions[_via_user_sel_region_id].region_attributes['Type'] = 'Lead';
+      annotation_editor_on_metadata_update_done('region', 'Type', 1);
+      annotation_editor_update_content();
+    }
+    return;
+  }
+
+  if(e.key === 'g') {
+    document.getElementById('generateTextBridge').click();
+    return;
+  }
+
+  if(e.key === 'o') {
+    document.getElementById('ocrBridge').click();
+    return;
   }
 
   if ( e.key === 'Escape' ) {
@@ -4083,11 +4370,11 @@ function _via_reg_canvas_keydown_handler(e) {
         }
     }
 
-    if ( e.key === 'a' ) {
-      sel_all_regions();
-      e.preventDefault();
-      return;
-    }
+    // if ( e.key === 'a' ) {
+    //   sel_all_regions();
+    //   e.preventDefault();
+    //   return;
+    // }
 
     if ( e.key === 'c' ) {
       if (_via_is_region_selected ||
@@ -4104,17 +4391,17 @@ function _via_reg_canvas_keydown_handler(e) {
       return;
     }
 
-    if ( e.key === 'b' ) {
-      toggle_region_boundary_visibility();
-      e.preventDefault();
-      return;
-    }
+    // if ( e.key === 'b' ) {
+    //   toggle_region_boundary_visibility();
+    //   e.preventDefault();
+    //   return;
+    // }
 
-    if ( e.key === 'l' ) {
-      toggle_region_id_visibility();
-      e.preventDefault();
-      return;
-    }
+    // if ( e.key === 'l' ) {
+    //   toggle_region_id_visibility();
+    //   e.preventDefault();
+    //   return;
+    // }
 
     if ( e.key === 'd' ) {
       if ( _via_is_region_selected ||
@@ -4869,7 +5156,7 @@ function leftsidebar_toggle() {
     leftsidebar.style.display = 'none';
     document.getElementById('leftsidebar_collapse_panel').style.display = 'table-cell';
   }
-  _via_update_ui_components();
+  _via_update_ui_components(false);
 }
 
 function leftsidebar_increase_width() {
@@ -5351,22 +5638,25 @@ function show_attribute_properties() {
   var attr_input_type = _via_attributes[attr_type][attr_id].type;
   var attr_desc = _via_attributes[attr_type][attr_id].description;
 
-  attribute_property_add_input_property('Name of attribute (appears in exported annotations)',
-                                        'Name',
-                                        attr_id,
-                                        'attribute_name');
-  attribute_property_add_input_property('Description of attribute (shown to user during annotation session)',
-                                        'Desc.',
-                                        attr_desc,
-                                        'attribute_description');
+  if(!['Type', 'Text', 'Codes'].includes(attr_id)) {
+    attribute_property_add_input_property('Name of attribute (appears in exported annotations)',
+        'Name',
+        attr_id,
+        'attribute_name');
+    attribute_property_add_input_property('Description of attribute (shown to user during annotation session)',
+        'Desc.',
+        attr_desc,
+        'attribute_description');
 
-  if ( attr_input_type === 'text' ) {
-    var attr_default_value = _via_attributes[attr_type][attr_id].default_value;
-    attribute_property_add_input_property('Default value of this attribute',
-                                          'Def.',
-                                          attr_default_value,
-                                          'attribute_default_value');
+    if ( attr_input_type === 'text' ) {
+      var attr_default_value = _via_attributes[attr_type][attr_id].default_value;
+      attribute_property_add_input_property('Default value of this attribute',
+          'Def.',
+          attr_default_value,
+          'attribute_default_value');
+    }
   }
+
 
   // add dropdown for type of attribute
   var p = document.createElement('div');
@@ -5376,6 +5666,7 @@ function show_attribute_properties() {
   c0.innerHTML = 'Type';
   var c1 = document.createElement('span');
   var c1b = document.createElement('select');
+
   c1b.setAttribute('onchange', 'attribute_property_on_update(this)');
   c1b.setAttribute('id', 'attribute_type');
   var type_id;
@@ -5389,9 +5680,17 @@ function show_attribute_properties() {
     }
     c1b.appendChild(option);
   }
-  c1.appendChild(c1b);
+
+  if(!['Type', 'Text', 'Codes'].includes(attr_id)) {
+    c1.appendChild(c1b);
+  } else {
+    c0.setAttribute('style', 'color: darkgray');
+    c0.innerHTML = attr_desc;
+  }
+
   p.appendChild(c0);
   p.appendChild(c1);
+
   document.getElementById('attribute_properties').appendChild(p);
 }
 
@@ -5449,17 +5748,23 @@ function show_attribute_options() {
     var c0 = document.createElement('span');
     c0.setAttribute('style', 'width:25%');
     c0.setAttribute('title', 'When selected, this is the value that appears in exported annotations');
-    c0.innerHTML = 'id';
+    if(attr_id == 'Codes') {
+      c0.innerHTML = 'Name';
+    } else {
+      c0.innerHTML = 'id';
+    }
+
     var c1 = document.createElement('span');
     c1.setAttribute('style', 'width:60%');
     c1.setAttribute('title', 'This is the text shown as an option to the annotator');
-    c1.innerHTML = 'description';
+    c1.innerHTML = 'Description';
     var c2 = document.createElement('span');
     c2.setAttribute('title', 'The default value of this attribute');
-    c2.innerHTML = 'def.';
+    c2.innerHTML = 'Default';
     p.appendChild(c0);
     p.appendChild(c1);
     p.appendChild(c2);
+
     document.getElementById('attribute_options').appendChild(p);
 
     var options = _via_attributes[_via_attribute_being_updated][attr_id].options;
@@ -5470,6 +5775,7 @@ function show_attribute_options() {
       var option_default = _via_attributes[_via_attribute_being_updated][attr_id].default_options[option_id];
       attribute_property_add_option(attr_id, option_id, option_desc, option_default, attr_type);
     }
+
     attribute_property_add_new_entry_option(attr_id, attr_type);
     break;
   default:
@@ -5507,6 +5813,11 @@ function attribute_property_add_option(attr_id, option_id, option_desc, option_d
   c0b.setAttribute('title', option_id);
   c0b.setAttribute('onchange', 'attribute_property_on_option_update(this)');
   c0b.setAttribute('id', '_via_attribute_option_id_' + option_id);
+
+  //NAT related code. Disables deleting core options.
+  if(attr_id == 'Type' && ['Body', 'Headline', 'Article', 'Lead', 'Byline', 'Item'].includes(option_id)) {
+    c0b.disabled = true;
+  }
 
   var c1 = document.createElement('span');
   var c1b = document.createElement('input');
@@ -5555,7 +5866,7 @@ function attribute_property_add_new_entry_option(attr_id, attribute_type) {
   c0b.setAttribute('type', 'text');
   c0b.setAttribute('onchange', 'attribute_property_on_option_add(this)');
   c0b.setAttribute('id', '_via_attribute_new_option_id');
-  c0b.setAttribute('placeholder', 'Add new option id');
+  c0b.setAttribute('placeholder', attr_id == 'Codes' ? 'Add new code' : 'Add new option id');
   p.appendChild(c0b);
   document.getElementById('attribute_options').appendChild(p);
 }
@@ -5890,12 +6201,17 @@ function delete_existing_attribute_with_confirm() {
     return;
   }
   if ( attribute_property_id_exists(attr_id) ) {
-    var config = {'title':'Delete ' + _via_attribute_being_updated + ' attribute [' + attr_id + ']',
-                  'warning': 'Warning: Deleting an attribute will lead to the attribute being deleted in all the annotations. Please click OK only if you are sure.'};
-    var input = { 'attr_type':{'type':'text', 'name':'Attribute Type', 'value':_via_attribute_being_updated, 'disabled':true},
-                  'attr_id':{'type':'text', 'name':'Attribute Id', 'value':attr_id, 'disabled':true}
-                };
-    invoke_with_user_inputs(delete_existing_attribute_confirmed, input, config);
+    if(['Type', 'Text', 'Codes'].includes(attr_id)) {
+      show_message('Cannot delete core attributes.');
+    } else {
+      var config = {'title':'Delete ' + _via_attribute_being_updated + ' attribute [' + attr_id + ']',
+        'warning': 'Warning: Deleting an attribute will lead to the attribute being deleted in all the annotations. Please click OK only if you are sure.'};
+      var input = { 'attr_type':{'type':'text', 'name':'Attribute Type', 'value':_via_attribute_being_updated, 'disabled':true},
+        'attr_id':{'type':'text', 'name':'Attribute Id', 'value':attr_id, 'disabled':true}
+      };
+      invoke_with_user_inputs(delete_existing_attribute_confirmed, input, config);
+    }
+
   } else {
     show_message('Attribute [' + attr_id + '] does not exist!');
     return;
@@ -5912,23 +6228,28 @@ function delete_existing_attribute_confirmed(input) {
 }
 
 function delete_existing_attribute(attribute_type, attr_id) {
-  if ( _via_attributes[attribute_type].hasOwnProperty( attr_id ) ) {
-    var attr_id_list = Object.keys(_via_attributes[attribute_type]);
-    if ( attr_id_list.length === 1 ) {
-      _via_current_attribute_id = '';
-    } else {
-      var current_index = attr_id_list.indexOf(attr_id);
-      var next_index = current_index + 1;
-      if ( next_index === attr_id_list.length ) {
-        next_index = current_index - 1;
+  if(['Type', 'Text', 'Codes'].includes(attr_id)) {
+    show_message('Core attributes (Type and Text) cannot be deleted.');
+  } else {
+    if ( _via_attributes[attribute_type].hasOwnProperty( attr_id ) ) {
+      var attr_id_list = Object.keys(_via_attributes[attribute_type]);
+      if ( attr_id_list.length === 1 ) {
+        _via_current_attribute_id = '';
+      } else {
+        var current_index = attr_id_list.indexOf(attr_id);
+        var next_index = current_index + 1;
+        if ( next_index === attr_id_list.length ) {
+          next_index = current_index - 1;
+        }
+        _via_current_attribute_id = attr_id_list[next_index];
       }
-      _via_current_attribute_id = attr_id_list[next_index];
+      delete _via_attributes[attribute_type][attr_id];
+      delete_region_attribute_in_all_metadata(attr_id);
+      update_attributes_update_panel();
+      annotation_editor_update_content();
     }
-    delete _via_attributes[attribute_type][attr_id];
-    delete_region_attribute_in_all_metadata(attr_id);
-    update_attributes_update_panel();
-    annotation_editor_update_content();
   }
+
 }
 
 function add_new_attribute_from_user_input() {
@@ -6992,7 +7313,9 @@ function annotation_editor_on_metadata_update(p) {
   var img_index_list = [ _via_image_index ];
 
 
+
   var region_id = pid.row_id;
+
   if ( _via_display_area_content_name === VIA_DISPLAY_AREA_CONTENT_NAME.IMAGE_GRID ) {
     img_index_list = _via_image_grid_selected_img_index_list.slice(0);
     region_id = -1; // this flag denotes that we want to update all regions
@@ -7320,7 +7643,7 @@ function project_get_default_project_name() {
   var ts = now.getDate() + MONTH_SHORT_NAME[now.getMonth()] + now.getFullYear() +
       '_' + now.getHours() + 'h' + now.getMinutes() + 'm';
 
-  var project_name = 'via_project_' + ts;
+  var project_name = 'NCT_project_' + ts;
   return project_name;
 }
 
@@ -7675,11 +7998,11 @@ async function project_file_add_local(event) {
 
         }
 
-        nat_update_file_attribute(new_img_index_list, 'Publication', publicationName);
-        nat_update_file_attribute(new_img_index_list, 'Date', newsDate);
-        nat_update_file_attribute(new_img_index_list, 'Volume', volumeInfo);
-        nat_update_file_attribute(new_img_index_list, 'Issue', issueInfo);
-        nat_update_file_attribute(new_img_index_list, 'Page', pageNo);
+        nat_update_file_attribute(new_img_id, 'Publication', publicationName);
+        nat_update_file_attribute(new_img_id, 'Date', newsDate);
+        nat_update_file_attribute(new_img_id, 'Volume', volumeInfo);
+        nat_update_file_attribute(new_img_id, 'Issue', issueInfo);
+        nat_update_file_attribute(new_img_id, 'Page', pageNo);
 
 
       } else {
@@ -7713,14 +8036,10 @@ async function project_file_add_local(event) {
   }
 }
 
-function nat_update_file_attribute(imgIndex, attrToUpdate, newValue) {
-  annotation_editor_update_file_metadata(imgIndex, attrToUpdate, newValue, undefined).then( function(update_count) {
-    annotation_editor_on_metadata_update_done('file', attrToUpdate, update_count);
-  }, function(err) {
-    console.log(err)
-    show_message('Failed to update file attributes! ' + err);
-  });
+function nat_update_file_attribute(imgID, attrToUpdate, newValue) {
+  _via_img_metadata[imgID].file_attributes[attrToUpdate] = newValue;
 }
+
 
 function project_file_add_abs_path_with_input() {
   var config = {'title':'Add File using Absolute Path' };

@@ -37,6 +37,12 @@ function _via_load_submodules() {
     nat_add_new_attribute('Text', VIA_ATTRIBUTE_TYPE.TEXT);
     _via_attributes['region']['Text'].description = 'Core attribute of coding application. Mainly used to insert text from OCR.'
 
+    _via_attributes['region']['Freeze Text'] = {};
+    _via_attributes['region']['Freeze Text'].type = 'radio';
+    _via_attributes['region']['Freeze Text'].options = {'No': 'No', 'Yes': 'Yes'};
+    _via_attributes['region']['Freeze Text'].default_options = {'No': true};
+    _via_attributes['region']['Freeze Text'].description = 'Core attribute of coding application. Options can only be added.'
+
     nat_add_new_attribute('Notes', VIA_ATTRIBUTE_TYPE.TEXT);
 
 

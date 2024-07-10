@@ -81,7 +81,7 @@ function processTextractResponse(filename) {
                 var shapeDetails = structuredClone(sattr);
                 delete shapeDetails.name;
 
-                if(rattr.Type == "Headline" || rattr.Type == "Body" || rattr.Type == "Byline" || rattr.Type == "Lead") {
+                if(['Headline', 'Body', 'Byline', 'Lead'].includes(rattr.Type) && rattr['Freeze Text'] != 'Yes') {
 
                     var bodyAr = [];
 
@@ -170,7 +170,7 @@ function processText() {
             var ParentShapeDetails = structuredClone(ParentSattr);
             delete ParentShapeDetails.name;
 
-            if(ParentRattr.Type == "Article" || ParentRattr.Type == "Item") {
+            if(['Article', 'Item'].includes(ParentRattr.Type) && ParentRattr['Freeze Text'] != 'Yes') {
 
                 var childObjects = [];
 
